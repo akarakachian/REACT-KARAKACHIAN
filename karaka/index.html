@@ -376,9 +376,16 @@
 // ═══════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════
-const API_DIRECT = 'https://api.bcra.gob.ar/estadisticas/v3.0/monetarias';
-const API_PROXY  = 'https://corsproxy.io/?url=https://api.bcra.gob.ar/estadisticas/v3.0/monetarias';
-let API = API_DIRECT;   // starts with direct; switches to proxy on CORS failure
+const BCRA_BASE  = 'https://api.bcra.gob.ar/estadisticas/v3.0/monetarias';
+
+// Proxies intentados en orden hasta que uno funcione
+const PROXIES = [
+  url => url,                                                          // directo
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://thingproxy.freeboard.io/fetch/${url}`,
+];
+let proxyFn = PROXIES[0];  // se actualiza en fetchAllVariables si el directo falla
 
 // Palette for chart series
 const PALETTE = [
@@ -455,32 +462,34 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-async function fetchAllVariables() {
-  // Try direct first; on CORS/network failure fall back to proxy
-  try {
-    const json = await fetchJSON(API_DIRECT);
-    API = API_DIRECT;
-    return json.results || json.Results || [];
-  } catch (e) {
-    console.warn('Direct API failed, trying CORS proxy…', e.message);
-    API = API_PROXY;
-    const json = await fetchJSON(API_PROXY);
-    return json.results || json.Results || [];
+async function fetchWithFallback(targetUrl) {
+  for (let i = 0; i < PROXIES.length; i++) {
+    try {
+      const proxiedUrl = PROXIES[i](targetUrl);
+      const json = await fetchJSON(proxiedUrl);
+      if (i > 0) console.info(`Usando proxy ${i}: ${PROXIES[i].toString().slice(0,60)}`);
+      proxyFn = PROXIES[i];   // recordar el que funcionó
+      return json;
+    } catch(e) {
+      console.warn(`Proxy ${i} falló:`, e.message);
+      if (i === PROXIES.length - 1) throw e;
+    }
   }
+}
+
+async function fetchAllVariables() {
+  const json = await fetchWithFallback(BCRA_BASE);
+  return json.results || json.Results || [];
 }
 
 // ═══════════════════════════════════════════════════════════
 // FETCH TIME SERIES FOR ONE VARIABLE
 // ═══════════════════════════════════════════════════════════
-async function fetchSeries(idVariable, from, to, retries = 3) {
-  // API variable set during init (direct or proxy)
-  const base = API === API_PROXY
-    ? `https://corsproxy.io/?url=https://api.bcra.gob.ar/estadisticas/v3.0/monetarias`
-    : API_DIRECT;
-  const url = `${base}/${idVariable}/${from}/${to}`;
+async function fetchSeries(idVariable, from, to, retries = 2) {
+  const targetUrl = `${BCRA_BASE}/${idVariable}/${from}/${to}`;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const json = await fetchJSON(url);
+      const json = await fetchJSON(proxyFn(targetUrl));
       return (json.results || json.Results || []).sort((a,b) => a.fecha.localeCompare(b.fecha));
     } catch(e) {
       if (attempt < retries) await sleep(500 * (attempt + 1));
