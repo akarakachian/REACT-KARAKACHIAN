@@ -413,6 +413,122 @@ const KPI_SPOTLIGHTS = [
 ];
 
 // ═══════════════════════════════════════════════════════════
+// MOCK DATA  (USE_MOCK = true → ignora la API y usa datos ficticios)
+// ═══════════════════════════════════════════════════════════
+const USE_MOCK = true;
+
+const MOCK_VARIABLES = [
+  // ── Reservas y tipo de cambio ───────────────────────────
+  { idVariable:  1, descripcion: 'Reservas Internacionales del BCRA (en millones de USD)',              categoria: 'Reservas y tipo de cambio',          fecha: '2025-03-14', valor: 28547   },
+  { idVariable:  4, descripcion: 'Tipo de Cambio Minorista ($ por USD) - Promedio vendedor',            categoria: 'Reservas y tipo de cambio',          fecha: '2025-03-14', valor: 1122.50 },
+  { idVariable:  5, descripcion: 'Tipo de Cambio Mayorista ($ por USD) - Com. A 3500',                  categoria: 'Reservas y tipo de cambio',          fecha: '2025-03-14', valor: 1097.00 },
+  { idVariable: 38, descripcion: 'Tipo de Cambio Contado con Liquidación (CCL)',                        categoria: 'Reservas y tipo de cambio',          fecha: '2025-03-14', valor: 1187.40 },
+  { idVariable: 39, descripcion: 'Tipo de Cambio Dólar MEP / Bolsa',                                   categoria: 'Reservas y tipo de cambio',          fecha: '2025-03-14', valor: 1175.20 },
+
+  // ── Tasas de interés ───────────────────────────────────
+  { idVariable:  6, descripcion: 'Tasa de Política Monetaria (% n.a.)',                                 categoria: 'Tasas de interés',                   fecha: '2025-03-14', valor: 29.00   },
+  { idVariable:  7, descripcion: 'BADLAR en pesos de bancos privados (% n.a.)',                         categoria: 'Tasas de interés',                   fecha: '2025-03-14', valor: 32.50   },
+  { idVariable:  8, descripcion: 'Tasa de interés de préstamos entre entidades financieras (call en pesos, % n.a.)', categoria: 'Tasas de interés',         fecha: '2025-03-14', valor: 30.75   },
+  { idVariable:  9, descripcion: 'Tasas de interés de depósitos a plazo fijo (bancos privados, 30-44 días, % n.a.)', categoria: 'Tasas de interés',         fecha: '2025-03-14', valor: 31.25   },
+  { idVariable: 10, descripcion: 'Tasas de interés de depósitos a plazo fijo (bancos públicos, 30-44 días, % n.a.)', categoria: 'Tasas de interés',         fecha: '2025-03-14', valor: 29.80   },
+  { idVariable: 11, descripcion: 'Tasa de pases pasivos a 1 día de plazo (% n.a.)',                     categoria: 'Tasas de interés',                   fecha: '2025-03-14', valor: 27.50   },
+
+  // ── Agregados monetarios ───────────────────────────────
+  { idVariable: 15, descripcion: 'Base Monetaria (en millones de pesos)',                               categoria: 'Agregados monetarios y crediticios', fecha: '2025-03-14', valor: 21847432 },
+  { idVariable: 16, descripcion: 'Circulación Monetaria (en millones de pesos)',                        categoria: 'Agregados monetarios y crediticios', fecha: '2025-03-14', valor: 14234876 },
+  { idVariable: 17, descripcion: 'Billetes y monedas en poder del público (en millones de pesos)',      categoria: 'Agregados monetarios y crediticios', fecha: '2025-03-14', valor: 12987341 },
+  { idVariable: 18, descripcion: 'Depósitos en cuenta corriente en $ (en millones)',                    categoria: 'Agregados monetarios y crediticios', fecha: '2025-03-14', valor: 18432187 },
+
+  // ── Depósitos ──────────────────────────────────────────
+  { idVariable: 19, descripcion: 'Depósitos en caja de ahorros en $ (en millones)',                     categoria: 'Depósitos',                          fecha: '2025-03-14', valor: 42876543 },
+  { idVariable: 20, descripcion: 'Depósitos a plazo fijo en $ (en millones)',                           categoria: 'Depósitos',                          fecha: '2025-03-14', valor: 62345678 },
+  { idVariable: 21, descripcion: 'Depósitos en USD en el sistema financiero (en millones de USD)',      categoria: 'Depósitos',                          fecha: '2025-03-14', valor: 14873    },
+  { idVariable: 22, descripcion: 'Depósitos totales en pesos del sector privado (en millones)',         categoria: 'Depósitos',                          fecha: '2025-03-14', valor: 98432180 },
+
+  // ── Préstamos ──────────────────────────────────────────
+  { idVariable: 25, descripcion: 'Préstamos en pesos al sector privado (en millones)',                  categoria: 'Préstamos',                          fecha: '2025-03-14', valor: 83456789 },
+  { idVariable: 26, descripcion: 'Préstamos en USD al sector privado (en millones de USD)',             categoria: 'Préstamos',                          fecha: '2025-03-14', valor: 7234     },
+  { idVariable: 36, descripcion: 'Préstamos hipotecarios en pesos (en millones)',                       categoria: 'Préstamos',                          fecha: '2025-03-14', valor: 8943210  },
+  { idVariable: 37, descripcion: 'Préstamos prendarios en pesos (en millones)',                         categoria: 'Préstamos',                          fecha: '2025-03-14', valor: 6234178  },
+
+  // ── Índices de precios ─────────────────────────────────
+  { idVariable: 27, descripcion: 'Inflación mensual (IPC - Nivel General, var. %)',                     categoria: 'Índices de precios',                 fecha: '2025-03-01', valor: 2.4      },
+  { idVariable: 28, descripcion: 'Inflación interanual (IPC - Nivel General, var. %)',                  categoria: 'Índices de precios',                 fecha: '2025-03-01', valor: 84.5     },
+  { idVariable: 29, descripcion: 'UVA (Unidad de Valor Adquisitivo, en pesos)',                         categoria: 'Índices de precios',                 fecha: '2025-03-14', valor: 1847.23  },
+  { idVariable: 30, descripcion: 'UVI (Unidad de Vivienda, en pesos)',                                  categoria: 'Índices de precios',                 fecha: '2025-03-14', valor: 1834.67  },
+  { idVariable: 31, descripcion: 'CER (Coeficiente de Estabilización de Referencia)',                   categoria: 'Índices de precios',                 fecha: '2025-03-14', valor: 18.4723  },
+];
+
+// Configuración de series: { start, end, noise }
+// start = valor hace ~12 meses, end = valor actual, noise = variación diaria máxima
+const MOCK_SERIES_CFG = {
+   1: { start: 21000,    end: 28547,    noise: 250  },  // Reservas (recuperación gradual)
+   4: { start: 808,      end: 1122.5,   noise: 4    },  // TC Minorista (sube)
+   5: { start: 790,      end: 1097,     noise: 3    },  // TC Mayorista
+  38: { start: 970,      end: 1187.4,   noise: 15   },  // CCL (más volátil)
+  39: { start: 960,      end: 1175.2,   noise: 12   },  // MEP
+   6: { start: 100,      end: 29,       noise: 0.3  },  // Tasa política (bajó drásticamente)
+   7: { start: 110,      end: 32.5,     noise: 0.8  },  // BADLAR
+   8: { start: 105,      end: 30.75,    noise: 1.5  },  // Call
+   9: { start: 108,      end: 31.25,    noise: 0.7  },  // PF privados
+  10: { start: 103,      end: 29.8,     noise: 0.7  },  // PF públicos
+  11: { start: 97,       end: 27.5,     noise: 0.5  },  // Pases pasivos
+  15: { start: 12000000, end: 21847432, noise: 220000}, // Base Monetaria
+  16: { start: 8000000,  end: 14234876, noise: 160000}, // Circulación
+  17: { start: 7200000,  end: 12987341, noise: 140000}, // B&M público
+  18: { start: 10000000, end: 18432187, noise: 280000}, // CC $
+  19: { start: 25000000, end: 42876543, noise: 450000}, // CA $
+  20: { start: 35000000, end: 62345678, noise: 750000}, // PF $
+  21: { start: 11000,    end: 14873,    noise: 80   },  // Dep USD
+  22: { start: 55000000, end: 98432180, noise: 900000}, // Dep totales $
+  25: { start: 42000000, end: 83456789, noise: 950000}, // Préstamos $
+  26: { start: 4800,     end: 7234,     noise: 45   },  // Préstamos USD
+  36: { start: 3200000,  end: 8943210,  noise: 80000},  // Hipotecarios
+  37: { start: 2800000,  end: 6234178,  noise: 60000},  // Prendarios
+  27: { start: 25.1,     end: 2.4,      noise: 0.5  },  // Inflación mensual (baja)
+  28: { start: 211,      end: 84.5,     noise: 1.5  },  // Inflación interanual
+  29: { start: 475,      end: 1847.23,  noise: 4    },  // UVA
+  30: { start: 472,      end: 1834.67,  noise: 4    },  // UVI
+  31: { start: 4.75,     end: 18.47,    noise: 0.04 },  // CER
+};
+
+function generateMockSeries(idVariable, from, to) {
+  const cfg = MOCK_SERIES_CFG[idVariable];
+  const variable = MOCK_VARIABLES.find(v => v.idVariable === idVariable) || {};
+  if (!cfg) return [];
+
+  // Fecha de referencia: 12 meses atrás
+  const refStart = new Date(); refStart.setFullYear(refStart.getFullYear() - 1);
+  const refEnd   = new Date();
+
+  // Generador pseudoaleatorio reproducible (LCG)
+  let seed = idVariable * 48271 + 1;
+  const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xFFFFFFFF; };
+
+  const dates = [];
+  const d = new Date(from + 'T12:00:00');
+  const end = new Date(to + 'T12:00:00');
+  while (d <= end) {
+    if (d.getDay() !== 0 && d.getDay() !== 6) dates.push(d.toISOString().split('T')[0]);
+    d.setDate(d.getDate() + 1);
+  }
+
+  return dates.map(fecha => {
+    const t = new Date(fecha + 'T12:00:00');
+    const progress = Math.max(0, Math.min(1, (t - refStart) / (refEnd - refStart)));
+    const base  = cfg.start + (cfg.end - cfg.start) * progress;
+    const noise = (rand() - 0.5) * 2 * cfg.noise;
+    return {
+      idVariable,
+      descripcion: variable.descripcion || '',
+      categoria:   variable.categoria   || '',
+      fecha,
+      valor: Number(Math.max(0, base + noise).toFixed(2)),
+    };
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════
 let allVariables = [];          // [{idVariable, descripcion, categoria, fecha, valor}]
@@ -483,6 +599,7 @@ async function fetchWithFallback(targetUrl) {
 }
 
 async function fetchAllVariables() {
+  if (USE_MOCK) return MOCK_VARIABLES;
   const json = await fetchWithFallback(BCRA_BASE);
   return json.results || json.Results || [];
 }
@@ -491,6 +608,7 @@ async function fetchAllVariables() {
 // FETCH TIME SERIES FOR ONE VARIABLE
 // ═══════════════════════════════════════════════════════════
 async function fetchSeries(idVariable, from, to, retries = 2) {
+  if (USE_MOCK) return generateMockSeries(idVariable, from, to);
   const targetUrl = `${BCRA_BASE}/${idVariable}/${from}/${to}`;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -876,13 +994,15 @@ async function init() {
 
     document.getElementById('errorBanner').classList.add('d-none');
   } catch(err) {
-    console.error(err);
-    document.getElementById('kpiRow').innerHTML = '';
-    document.getElementById('indicatorList').innerHTML =
-      `<div class="empty-state"><div class="empty-icon"><i class="bi bi-wifi-off"></i></div><div>Sin conexión con BCRA</div></div>`;
-    const banner = document.getElementById('errorBanner');
-    document.getElementById('errorMsg').textContent = err.message ? `(${err.message}) ` : '';
-    banner.classList.remove('d-none');
+    if (!USE_MOCK) {
+      console.error(err);
+      document.getElementById('kpiRow').innerHTML = '';
+      document.getElementById('indicatorList').innerHTML =
+        `<div class="empty-state"><div class="empty-icon"><i class="bi bi-wifi-off"></i></div><div>Sin conexión con BCRA</div></div>`;
+      const banner = document.getElementById('errorBanner');
+      document.getElementById('errorMsg').textContent = err.message ? `(${err.message}) ` : '';
+      banner.classList.remove('d-none');
+    }
   }
 }
 
