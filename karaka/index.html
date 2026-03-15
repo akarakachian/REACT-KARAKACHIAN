@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Financiero Argentina · BCRA</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <!-- chartjs-adapter-date-fns for time axis -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+  <style>
+    :root {
+      --bcra-blue: #74acdf;
+      --bcra-light-blue: #a8d0f0;
+      --bg-body: #0b0f1a;
+      --bg-card: #131929;
+      --bg-card-hover: #1a2238;
+      --border: #1e2d4a;
+      --text-muted-custom: #6b7a99;
+      --positive: #22c55e;
+      --negative: #ef4444;
+      --chart-grid: rgba(255,255,255,0.04);
+    }
+
+    body {
+      background: var(--bg-body);
+      color: #dde3f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ──────────────────────────────────────────── */
+    .app-header {
+      background: linear-gradient(135deg, #0f1c36 0%, #0d1626 100%);
+      border-bottom: 2px solid var(--border);
+      padding: 14px 24px;
+    }
+    .app-header .logo-flag {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-right: 12px;
+    }
+    .app-header .logo-flag span {
+      display: block;
+      width: 32px;
+      height: 6px;
+      border-radius: 2px;
+    }
+    .flag-top    { background: #74acdf; }
+    .flag-mid    { background: #ffffff; }
+    .flag-bottom { background: #74acdf; }
+    .app-title { font-size: 1.35rem; font-weight: 700; color: #e8eef8; letter-spacing: -0.3px; }
+    .app-subtitle { font-size: 0.75rem; color: var(--text-muted-custom); margin-top: 1px; }
+    .source-badge {
+      font-size: 0.7rem;
+      background: rgba(116,172,223,0.12);
+      color: var(--bcra-blue);
+      border: 1px solid rgba(116,172,223,0.25);
+      border-radius: 20px;
+      padding: 3px 10px;
+    }
+
+    /* ── KPI CARDS ───────────────────────────────────────── */
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      transition: border-color .2s;
+      min-width: 0;
+    }
+    .kpi-card:hover { border-color: var(--bcra-blue); }
+    .kpi-label { font-size: 0.68rem; color: var(--text-muted-custom); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kpi-value { font-size: 1.3rem; font-weight: 700; color: #e8eef8; white-space: nowrap; }
+    .kpi-date  { font-size: 0.65rem; color: var(--text-muted-custom); margin-top: 3px; }
+    .kpi-icon  { font-size: 1.4rem; opacity: .5; }
+
+    /* ── CONTROLS PANEL ──────────────────────────────────── */
+    .controls-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+    .period-btn {
+      font-size: 0.78rem;
+      padding: 5px 13px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: #9aafc9;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .period-btn:hover, .period-btn.active {
+      background: var(--bcra-blue);
+      color: #0b0f1a;
+      border-color: var(--bcra-blue);
+      font-weight: 600;
+    }
+    .custom-date-input {
+      background: #0b0f1a;
+      border: 1px solid var(--border);
+      color: #dde3f0;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      padding: 5px 10px;
+    }
+    .custom-date-input:focus { outline: none; border-color: var(--bcra-blue); }
+
+    /* ── SIDEBAR INDICATOR LIST ──────────────────────────── */
+    .sidebar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 12px 16px;
+      background: rgba(116,172,223,0.06);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--bcra-blue);
+    }
+    .sidebar-search {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-search input {
+      background: #0b0f1a;
+      border: 1px solid var(--border);
+      color: #dde3f0;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      width: 100%;
+    }
+    .sidebar-search input:focus { outline: none; border-color: var(--bcra-blue); }
+    .indicator-list {
+      height: calc(100vh - 360px);
+      min-height: 300px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .category-header {
+      padding: 7px 12px 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: var(--text-muted-custom);
+      background: rgba(255,255,255,0.02);
+      border-top: 1px solid var(--border);
+      margin-top: 2px;
+    }
+    .indicator-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      color: #9aafc9;
+      transition: background .12s;
+      border-left: 3px solid transparent;
+      gap: 8px;
+    }
+    .indicator-item:hover { background: rgba(116,172,223,0.07); color: #dde3f0; }
+    .indicator-item.selected {
+      background: rgba(116,172,223,0.12);
+      color: #dde3f0;
+      border-left-color: var(--bcra-blue);
+    }
+    .indicator-item input[type=checkbox] { accent-color: var(--bcra-blue); flex-shrink: 0; }
+    .indicator-item .ind-name { flex: 1; line-height: 1.35; }
+    .color-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── CHART AREA ──────────────────────────────────────── */
+    .chart-container-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .chart-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #c0cee8;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .charts-area {
+      display: grid;
+      gap: 16px;
+    }
+    .charts-area.grid-1 { grid-template-columns: 1fr; }
+    .charts-area.grid-2 { grid-template-columns: 1fr 1fr; }
+    .charts-area.grid-3 { grid-template-columns: 1fr 1fr; }
+    canvas { max-width: 100%; }
+
+    /* ── VIEW TOGGLE ─────────────────────────────────────── */
+    .view-toggle { display: flex; gap: 6px; }
+    .view-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: #6b7a99;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .view-btn.active {
+      background: rgba(116,172,223,0.15);
+      border-color: var(--bcra-blue);
+      color: var(--bcra-blue);
+    }
+
+    /* ── LOADER / EMPTY ──────────────────────────────────── */
+    .loading-overlay {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--text-muted-custom);
+      font-size: 0.85rem;
+      gap: 12px;
+    }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--bcra-blue); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; color: var(--text-muted-custom); font-size: 0.85rem; gap: 8px; }
+    .empty-icon { font-size: 2.5rem; opacity: .3; }
+
+    /* ── ERROR TOAST ─────────────────────────────────────── */
+    .error-banner {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.8rem;
+      color: #fca5a5;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ── COMPARE MODE ─────────────────────────────────────── */
+    .compare-note { font-size: 0.7rem; color: var(--text-muted-custom); font-style: italic; }
+
+    @media (max-width: 992px) {
+      .charts-area.grid-2, .charts-area.grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ════════════════════════════════ -->
+<header class="app-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-2">
+    <div class="logo-flag">
+      <span class="flag-top"></span>
+      <span class="flag-mid"></span>
+      <span class="flag-bottom"></span>
+    </div>
+    <div>
+      <div class="app-title">Dashboard Financiero · Argentina</div>
+      <div class="app-subtitle">Estadísticas e Indicadores del Banco Central de la República Argentina</div>
+    </div>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <span class="source-badge"><i class="bi bi-database me-1"></i>Fuente: API BCRA Oficial</span>
+    <span id="lastUpdated" class="app-subtitle"></span>
+  </div>
+</header>
+
+<!-- ═══════════════ MAIN LAYOUT ═══════════════════════════ -->
+<div class="container-fluid px-3 py-3" style="max-width: 1600px;">
+
+  <!-- KPI CARDS ROW -->
+  <div id="kpiRow" class="row g-2 mb-3">
+    <!-- filled by JS -->
+    <div class="col-12"><div class="loading-overlay"><div class="spinner"></div><span>Cargando indicadores…</span></div></div>
+  </div>
+
+  <!-- ERROR BANNER -->
+  <div id="errorBanner" class="error-banner mb-3 d-none">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div>
+      <strong>Error al conectar con la API del BCRA.</strong><br/>
+      <span id="errorMsg"></span>
+      Asegurate de estar conectado a internet. Si el problema persiste, el servicio del BCRA puede estar temporalmente inactivo.
+    </div>
+  </div>
+
+  <!-- CONTROLS PANEL -->
+  <div class="controls-panel mb-3">
+    <div class="row g-2 align-items-center">
+      <div class="col-auto">
+        <span class="text-muted" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Período</span>
+      </div>
+      <div class="col-auto d-flex flex-wrap gap-1" id="periodBtns">
+        <button class="period-btn" data-months="1">1M</button>
+        <button class="period-btn" data-months="3">3M</button>
+        <button class="period-btn active" data-months="6">6M</button>
+        <button class="period-btn" data-months="12">1A</button>
+        <button class="period-btn" data-months="24">2A</button>
+        <button class="period-btn" data-months="60">5A</button>
+      </div>
+      <div class="col-auto d-flex align-items-center gap-2">
+        <span class="text-muted" style="font-size:.75rem">Personalizado:</span>
+        <input type="date" id="dateFrom" class="custom-date-input" />
+        <span class="text-muted" style="font-size:.75rem">—</span>
+        <input type="date" id="dateTo" class="custom-date-input" />
+      </div>
+      <div class="col-auto ms-auto d-flex align-items-center gap-2">
+        <span style="font-size:.72rem;color:var(--text-muted-custom)">Vista:</span>
+        <div class="view-toggle">
+          <button class="view-btn active" data-view="individual"><i class="bi bi-grid me-1"></i>Individual</button>
+          <button class="view-btn" data-view="compare"><i class="bi bi-layers me-1"></i>Comparar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY: SIDEBAR + CHARTS -->
+  <div class="row g-3">
+
+    <!-- SIDEBAR -->
+    <div class="col-12 col-lg-3 col-xl-2">
+      <div class="sidebar h-100">
+        <div class="sidebar-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-funnel me-1"></i>Indicadores</span>
+          <span id="selectedCount" class="badge" style="background:rgba(116,172,223,.2);color:var(--bcra-blue);font-size:.65rem;">0</span>
+        </div>
+        <div class="sidebar-search">
+          <input type="text" id="indSearch" placeholder="&#128269; Buscar indicador…" />
+        </div>
+        <div id="indicatorList" class="indicator-list">
+          <div class="loading-overlay"><div class="spinner"></div></div>
+        </div>
+        <div class="p-2 border-top" style="border-color:var(--border)!important;">
+          <button id="btnFetch" class="btn btn-sm w-100" style="background:var(--bcra-blue);color:#0b0f1a;font-weight:700;border-radius:8px;font-size:.78rem;" disabled>
+            <i class="bi bi-bar-chart-line me-1"></i>Ver Gráficos
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS AREA -->
+    <div class="col-12 col-lg-9 col-xl-10">
+      <div id="chartsAreaWrap">
+        <div class="empty-state">
+          <div class="empty-icon"><i class="bi bi-graph-up-arrow"></i></div>
+          <div>Seleccioná uno o más indicadores para visualizarlos</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /row -->
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+const API = 'https://api.bcra.gob.ar/estadisticas/v3.0/monetarias';
+
+// Palette for chart series
+const PALETTE = [
+  '#74acdf','#22c55e','#f59e0b','#a78bfa','#f87171',
+  '#34d399','#fb923c','#60a5fa','#e879f9','#2dd4bf',
+  '#facc15','#818cf8','#f472b6','#4ade80','#38bdf8',
+];
+
+// KPI spotlight: variables we want to always show as top cards
+// matched by substring of descripcion (case-insensitive)
+const KPI_SPOTLIGHTS = [
+  { match: 'reservas internacionales', icon: 'bi-bank',           color: '#74acdf', unit: 'USD MM' },
+  { match: 'tipo de cambio minorista', icon: 'bi-currency-dollar',color: '#22c55e', unit: '$/USD' },
+  { match: 'tipo de cambio mayorista', icon: 'bi-currency-exchange',color:'#34d399',unit: '$/USD' },
+  { match: 'tasa de política monetaria',icon:'bi-percent',        color: '#f59e0b', unit: '% n.a.' },
+  { match: 'badlar',                    icon: 'bi-graph-down-arrow',color:'#fb923c',unit: '% n.a.' },
+  { match: 'base monetaria',            icon: 'bi-cash-stack',    color: '#a78bfa', unit: '$MM' },
+  { match: 'inflación',                 icon: 'bi-arrow-up-circle',color:'#f87171', unit: '%' },
+  { match: 'préstamos',                 icon: 'bi-credit-card',   color: '#60a5fa', unit: '$MM' },
+];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let allVariables = [];          // [{idVariable, descripcion, categoria, fecha, valor}]
+let selected = new Set();       // selected idVariable (numbers)
+let currentCharts = [];         // Chart.js instances (for cleanup)
+let viewMode = 'individual';    // 'individual' | 'compare'
+let dateFrom = '';
+let dateTo   = '';
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+function fmtNum(v) {
+  if (v == null) return '—';
+  const abs = Math.abs(v);
+  if (abs >= 1e9)  return (v/1e9).toFixed(2)  + ' B';
+  if (abs >= 1e6)  return (v/1e6).toFixed(2)  + ' M';
+  if (abs >= 1e3)  return (v/1e3).toFixed(1)  + ' K';
+  return v.toLocaleString('es-AR', {maximumFractionDigits: 2});
+}
+function fmtDate(d) {
+  if (!d) return '';
+  const [y,m,dd] = d.split('-');
+  return `${dd}/${m}/${y}`;
+}
+function toISO(d) { return d ? d.toISOString().split('T')[0] : ''; }
+function addMonths(d, n) {
+  const r = new Date(d);
+  r.setMonth(r.getMonth() - n);
+  return r;
+}
+function getColor(index) { return PALETTE[index % PALETTE.length]; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ═══════════════════════════════════════════════════════════
+// DATE HELPERS
+// ═══════════════════════════════════════════════════════════
+function initDates(months = 6) {
+  const today = new Date();
+  dateTo   = toISO(today);
+  dateFrom = toISO(addMonths(today, months));
+  document.getElementById('dateTo').value   = dateTo;
+  document.getElementById('dateFrom').value = dateFrom;
+}
+
+// ═══════════════════════════════════════════════════════════
+// FETCH ALL VARIABLES (latest values)
+// ═══════════════════════════════════════════════════════════
+async function fetchAllVariables() {
+  const res = await fetch(API, { headers: { 'Accept': 'application/json' } });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  return json.results || json.Results || [];
+}
+
+// ═══════════════════════════════════════════════════════════
+// FETCH TIME SERIES FOR ONE VARIABLE
+// ═══════════════════════════════════════════════════════════
+async function fetchSeries(idVariable, from, to, retries = 3) {
+  const url = `${API}/${idVariable}/${from}/${to}`;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return (json.results || json.Results || []).sort((a,b) => a.fecha.localeCompare(b.fecha));
+    } catch(e) {
+      if (attempt < retries) await sleep(500 * (attempt + 1));
+      else throw e;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER KPI CARDS
+// ═══════════════════════════════════════════════════════════
+function renderKpiCards(variables) {
+  const kpiRow = document.getElementById('kpiRow');
+  kpiRow.innerHTML = '';
+
+  // Match spotlights
+  const cards = KPI_SPOTLIGHTS.map(spot => {
+    const v = variables.find(x => x.descripcion.toLowerCase().includes(spot.match));
+    return v ? { ...spot, variable: v } : null;
+  }).filter(Boolean);
+
+  // If no matches found, show first 6 variables
+  const displayCards = cards.length > 0 ? cards : variables.slice(0, 6).map((v, i) => ({
+    match: '', icon: 'bi-graph-up', color: PALETTE[i], unit: '', variable: v
+  }));
+
+  displayCards.forEach(card => {
+    const v = card.variable;
+    const col = document.createElement('div');
+    col.className = 'col-6 col-sm-4 col-md-3 col-lg-2';
+    col.innerHTML = `
+      <div class="kpi-card h-100">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="kpi-label" title="${v.descripcion}">${v.descripcion}</div>
+          <i class="${card.icon} kpi-icon" style="color:${card.color}"></i>
+        </div>
+        <div class="kpi-value" style="color:${card.color}">${fmtNum(v.valor)}</div>
+        <div class="kpi-date"><i class="bi bi-clock me-1"></i>${fmtDate(v.fecha)}</div>
+      </div>`;
+    kpiRow.appendChild(col);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER INDICATOR SIDEBAR
+// ═══════════════════════════════════════════════════════════
+function renderIndicatorList(variables, filter = '') {
+  const el = document.getElementById('indicatorList');
+  el.innerHTML = '';
+
+  const lf = filter.toLowerCase();
+  const filtered = lf ? variables.filter(v => v.descripcion.toLowerCase().includes(lf) || v.categoria.toLowerCase().includes(lf)) : variables;
+
+  // Group by categoria
+  const groups = {};
+  filtered.forEach(v => {
+    const cat = v.categoria || 'Sin categoría';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(v);
+  });
+
+  let colorIdx = 0;
+  const colorMap = {};
+  allVariables.forEach((v, i) => { colorMap[v.idVariable] = getColor(i); });
+
+  Object.entries(groups).forEach(([cat, items]) => {
+    const hdr = document.createElement('div');
+    hdr.className = 'category-header';
+    hdr.textContent = cat;
+    el.appendChild(hdr);
+
+    items.forEach(v => {
+      const isSelected = selected.has(v.idVariable);
+      const color = colorMap[v.idVariable];
+      const item = document.createElement('div');
+      item.className = 'indicator-item' + (isSelected ? ' selected' : '');
+      item.dataset.id = v.idVariable;
+      item.innerHTML = `
+        <input type="checkbox" ${isSelected ? 'checked' : ''} />
+        <span class="color-dot" style="background:${color}"></span>
+        <span class="ind-name">${v.descripcion}</span>
+        <span style="font-size:.62rem;color:var(--text-muted-custom);white-space:nowrap">${fmtNum(v.valor)}</span>
+      `;
+      item.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT') return; // native checkbox handled below
+        const cb = item.querySelector('input');
+        cb.checked = !cb.checked;
+        toggleSelected(v.idVariable, cb.checked, item);
+      });
+      item.querySelector('input').addEventListener('change', (e) => {
+        toggleSelected(v.idVariable, e.target.checked, item);
+      });
+      el.appendChild(item);
+    });
+  });
+
+  updateSelectedCount();
+}
+
+function toggleSelected(id, add, itemEl) {
+  if (add) selected.add(id);
+  else selected.delete(id);
+  itemEl.classList.toggle('selected', add);
+  document.getElementById('btnFetch').disabled = selected.size === 0;
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const el = document.getElementById('selectedCount');
+  el.textContent = selected.size;
+  el.style.display = selected.size > 0 ? '' : 'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// FETCH & RENDER CHARTS
+// ═══════════════════════════════════════════════════════════
+async function renderCharts() {
+  const wrap = document.getElementById('chartsAreaWrap');
+  wrap.innerHTML = `<div class="loading-overlay"><div class="spinner"></div><span>Cargando series de datos…</span></div>`;
+
+  // Destroy old charts
+  currentCharts.forEach(c => c.destroy());
+  currentCharts = [];
+
+  const ids = [...selected];
+  const varMap = {};
+  allVariables.forEach(v => { varMap[v.idVariable] = v; });
+
+  // Fetch all series
+  const results = await Promise.allSettled(
+    ids.map(id => fetchSeries(id, dateFrom, dateTo))
+  );
+
+  const series = [];
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled' && r.value.length > 0) {
+      series.push({ id: ids[i], data: r.value, variable: varMap[ids[i]] });
+    }
+  });
+
+  if (series.length === 0) {
+    wrap.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="bi bi-exclamation-circle"></i></div><div>No se encontraron datos para el período seleccionado.</div></div>`;
+    return;
+  }
+
+  if (viewMode === 'compare') {
+    renderCompareChart(wrap, series);
+  } else {
+    renderIndividualCharts(wrap, series);
+  }
+}
+
+// ── INDIVIDUAL MODE: one chart per indicator ──────────────
+function renderIndividualCharts(wrap, series) {
+  wrap.innerHTML = '';
+
+  const gridClass = series.length === 1 ? 'grid-1' : series.length <= 4 ? 'grid-2' : 'grid-3';
+  const grid = document.createElement('div');
+  grid.className = `charts-area ${gridClass}`;
+  wrap.appendChild(grid);
+
+  series.forEach((s, idx) => {
+    const color = getColor(allVariables.findIndex(v => v.idVariable === s.id));
+    const container = document.createElement('div');
+    container.className = 'chart-container-wrapper';
+
+    const labels = s.data.map(d => d.fecha);
+    const values = s.data.map(d => d.valor);
+    const lastVal = values[values.length - 1];
+    const firstVal = values[0];
+    const change = firstVal !== 0 ? ((lastVal - firstVal) / Math.abs(firstVal)) * 100 : 0;
+    const isPos = change >= 0;
+
+    container.innerHTML = `
+      <div class="chart-title">
+        <span class="color-dot" style="background:${color};width:10px;height:10px;border-radius:50%;display:inline-block;"></span>
+        ${s.variable.descripcion}
+        <span class="ms-auto" style="font-size:.72rem;color:${isPos ? 'var(--positive)' : 'var(--negative)'}">
+          <i class="bi bi-arrow-${isPos ? 'up' : 'down'}-short"></i>${Math.abs(change).toFixed(1)}%
+        </span>
+      </div>
+      <div style="position:relative;height:${series.length === 1 ? 350 : 220}px">
+        <canvas id="chart_${s.id}"></canvas>
+      </div>
+      <div class="d-flex justify-content-between mt-1" style="font-size:.68rem;color:var(--text-muted-custom)">
+        <span>Último: <strong style="color:#dde3f0">${fmtNum(lastVal)}</strong></span>
+        <span>${fmtDate(labels[0])} → ${fmtDate(labels[labels.length-1])}</span>
+      </div>`;
+    grid.appendChild(container);
+
+    const ctx = container.querySelector(`#chart_${s.id}`).getContext('2d');
+
+    // Gradient fill
+    const gradient = ctx.createLinearGradient(0, 0, 0, series.length === 1 ? 350 : 220);
+    gradient.addColorStop(0, color + '40');
+    gradient.addColorStop(1, color + '00');
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: s.variable.descripcion,
+          data: values,
+          borderColor: color,
+          backgroundColor: gradient,
+          borderWidth: 2,
+          pointRadius: labels.length > 100 ? 0 : 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: color,
+          fill: true,
+          tension: 0.3,
+        }]
+      },
+      options: chartOptions(s.variable.descripcion)
+    });
+    currentCharts.push(chart);
+  });
+}
+
+// ── COMPARE MODE: all indicators on same chart (normalized) ──
+function renderCompareChart(wrap, series) {
+  wrap.innerHTML = '';
+  const container = document.createElement('div');
+  container.className = 'chart-container-wrapper';
+  container.innerHTML = `
+    <div class="chart-title">
+      <i class="bi bi-layers me-1"></i>Vista Comparativa (índice 100 = inicio del período)
+      <span class="ms-auto compare-note">Todos los indicadores normalizados al inicio del período para comparar tendencias</span>
+    </div>
+    <div style="position:relative;height:400px"><canvas id="compareChart"></canvas></div>`;
+  wrap.appendChild(container);
+
+  const datasets = series.map((s, i) => {
+    const color = getColor(allVariables.findIndex(v => v.idVariable === s.id));
+    const base = s.data[0]?.valor || 1;
+    return {
+      label: s.variable.descripcion,
+      data: s.data.map(d => ({ x: d.fecha, y: base !== 0 ? (d.valor / base) * 100 : 0 })),
+      borderColor: color,
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: s.data.length > 100 ? 0 : 3,
+      pointHoverRadius: 5,
+      tension: 0.3,
+    };
+  });
+
+  const ctx = document.getElementById('compareChart').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      ...chartOptions(''),
+      scales: {
+        x: scaleX(),
+        y: {
+          ...scaleY('Índice (100 = inicio)'),
+          ticks: {
+            color: '#6b7a99',
+            font: { size: 11 },
+            callback: v => v.toFixed(0),
+          }
+        }
+      }
+    }
+  });
+  currentCharts.push(chart);
+}
+
+// ── CHART.JS DEFAULT OPTIONS ──────────────────────────────
+function scaleX() {
+  return {
+    type: 'time',
+    time: { unit: 'month', tooltipFormat: 'dd/MM/yyyy' },
+    grid: { color: 'var(--chart-grid)' },
+    ticks: { color: '#6b7a99', font: { size: 10 }, maxTicksLimit: 12 },
+  };
+}
+function scaleY(label = '') {
+  return {
+    grid: { color: 'var(--chart-grid)' },
+    ticks: { color: '#6b7a99', font: { size: 10 }, callback: v => fmtNum(v) },
+    title: label ? { display: true, text: label, color: '#6b7a99', font: { size: 10 } } : undefined,
+  };
+}
+function chartOptions(label) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a2234',
+        borderColor: '#2d3748',
+        borderWidth: 1,
+        titleColor: '#9aafc9',
+        bodyColor: '#dde3f0',
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${fmtNum(ctx.parsed.y)}`,
+          title: ctx => fmtDate(ctx[0].label),
+        }
+      }
+    },
+    scales: {
+      x: scaleX(),
+      y: scaleY(label),
+    }
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// PERIOD BUTTONS
+// ═══════════════════════════════════════════════════════════
+document.getElementById('periodBtns').addEventListener('click', e => {
+  const btn = e.target.closest('.period-btn');
+  if (!btn) return;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const months = +btn.dataset.months;
+  initDates(months);
+});
+
+document.getElementById('dateFrom').addEventListener('change', e => {
+  dateFrom = e.target.value;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+});
+document.getElementById('dateTo').addEventListener('change', e => {
+  dateTo = e.target.value;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+});
+
+// ═══════════════════════════════════════════════════════════
+// VIEW TOGGLE
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.view-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    viewMode = btn.dataset.view;
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════════════
+document.getElementById('indSearch').addEventListener('input', e => {
+  renderIndicatorList(allVariables, e.target.value);
+});
+
+// ═══════════════════════════════════════════════════════════
+// FETCH BUTTON
+// ═══════════════════════════════════════════════════════════
+document.getElementById('btnFetch').addEventListener('click', renderCharts);
+
+// ═══════════════════════════════════════════════════════════
+// BOOTSTRAP
+// ═══════════════════════════════════════════════════════════
+async function init() {
+  initDates(6);
+
+  try {
+    allVariables = await fetchAllVariables();
+
+    // Sort alphabetically within category
+    allVariables.sort((a, b) => {
+      const cc = a.categoria.localeCompare(b.categoria, 'es');
+      if (cc !== 0) return cc;
+      return a.descripcion.localeCompare(b.descripcion, 'es');
+    });
+
+    renderKpiCards(allVariables);
+    renderIndicatorList(allVariables);
+
+    // Update timestamp
+    document.getElementById('lastUpdated').textContent =
+      `Actualizado: ${new Date().toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'})}`;
+
+    document.getElementById('errorBanner').classList.add('d-none');
+  } catch(err) {
+    console.error(err);
+    document.getElementById('kpiRow').innerHTML = '';
+    document.getElementById('indicatorList').innerHTML =
+      `<div class="empty-state"><div class="empty-icon"><i class="bi bi-wifi-off"></i></div><div>Sin conexión con BCRA</div></div>`;
+    const banner = document.getElementById('errorBanner');
+    document.getElementById('errorMsg').textContent = err.message ? `(${err.message}) ` : '';
+    banner.classList.remove('d-none');
+  }
+}
+
+init();
+</script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
