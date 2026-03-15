@@ -377,10 +377,15 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 const BCRA_BASE  = 'https://api.bcra.gob.ar/estadisticas/v3.0/monetarias';
+const BCRA_PROXY = '/api/bcra';  // Netlify function
 
 // Proxies intentados en orden hasta que uno funcione
 const PROXIES = [
-  url => url,                                                          // directo
+  // 1. Netlify serverless proxy (works on netlify.app and netlify dev)
+  url => BCRA_PROXY + url.replace(BCRA_BASE, ''),
+  // 2. Directo (funciona desde dominios reales con CORS habilitado)
+  url => url,
+  // 3. Fallbacks públicos
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   url => `https://thingproxy.freeboard.io/fetch/${url}`,

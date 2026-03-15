@@ -1,0 +1,12 @@
+[build]
+  publish = "karaka"
+
+[functions]
+  directory = "netlify/functions"
+
+# /api/scan   → TradingView proxy
+# /api/bcra/* → BCRA proxy
+[[redirects]]
+  from = "/api/*"
+  to   = "/.netlify/functions/:splat"
+  status = 200

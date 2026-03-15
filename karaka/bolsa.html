@@ -195,7 +195,9 @@
 // ═══════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════
-const TV_SCAN = market => `https://scanner.tradingview.com/${market}/scan`;
+// Proxy route (Netlify function) — avoids CORS
+const TV_PROXY = '/api/scan';
+const TV_DIRECT = market => `https://scanner.tradingview.com/${market}/scan`;
 
 const COLUMNS = ['name','description','close','change','change_abs','volume','market_cap_basic',
                  'RSI','MACD.macd','MACD.signal','SMA10','SMA50','SMA100'];
@@ -235,10 +237,26 @@ const pctClass  = v => v > 0 ? 'positive' : v < 0 ? 'negative' : 'neutral';
 const arrow     = v => v > 0 ? '▲' : v < 0 ? '▼' : '—';
 
 async function tvPost(market, body) {
-  const r = await fetch(TV_SCAN(market), {
+  // 1st attempt: Netlify serverless proxy (production + netlify dev)
+  try {
+    const r = await fetch(TV_PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ market, body: JSON.stringify(body) }),
+    });
+    if (!r.ok) throw new Error(`proxy HTTP ${r.status}`);
+    const json = await r.json();
+    if (json.error) throw new Error(json.error);
+    return json;
+  } catch (proxyErr) {
+    console.warn('Proxy failed, trying direct TradingView:', proxyErr.message);
+  }
+
+  // 2nd attempt: direct call (may fail with CORS outside Netlify)
+  const r = await fetch(TV_DIRECT(market), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`HTTP ${r.status} — ${market}`);
   return r.json();
