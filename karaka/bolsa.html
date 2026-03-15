@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Bursátil · Índices Globales</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-body:  #0b0f1a;
+      --bg-card:  #111827;
+      --bg-table: #0f1624;
+      --border:   #1e2d4a;
+      --muted:    #6b7a99;
+      --text:     #dde3f0;
+      --positive: #22c55e;
+      --negative: #ef4444;
+      --neutral:  #94a3b8;
+    }
+
+    body { background: var(--bg-body); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    /* ── HEADER ── */
+    .app-header {
+      background: linear-gradient(135deg, #0d1626 0%, #0f1c36 100%);
+      border-bottom: 2px solid var(--border);
+      padding: 14px 24px;
+    }
+    .app-title    { font-size: 1.3rem; font-weight: 700; color: #e8eef8; }
+    .app-subtitle { font-size: .73rem; color: var(--muted); }
+
+    /* ── INDEX KPI CARDS ── */
+    .idx-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color .18s, transform .12s;
+      position: relative;
+      overflow: hidden;
+    }
+    .idx-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--idx-color, #3b82f6);
+      border-radius: 12px 12px 0 0;
+    }
+    .idx-card:hover  { border-color: var(--idx-color, #3b82f6); transform: translateY(-2px); }
+    .idx-card.active { border-color: var(--idx-color, #3b82f6); background: #131d35; }
+    .idx-name  { font-size: .68rem; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 2px; }
+    .idx-value { font-size: 1.25rem; font-weight: 700; color: #e8eef8; }
+    .idx-change { font-size: .8rem; font-weight: 600; }
+    .idx-flag { font-size: 1.3rem; position: absolute; top: 12px; right: 14px; opacity: .6; }
+    .positive { color: var(--positive); }
+    .negative { color: var(--negative); }
+    .neutral  { color: var(--neutral); }
+
+    /* ── TABS ── */
+    .idx-tabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 0 0 0 2px; }
+    .idx-tab {
+      padding: 7px 18px; font-size: .78rem; font-weight: 600;
+      border: 1px solid var(--border); border-radius: 10px 10px 0 0;
+      background: var(--bg-card); color: var(--muted); cursor: pointer;
+      transition: all .15s; border-bottom: none;
+    }
+    .idx-tab:hover  { color: var(--text); }
+    .idx-tab.active { background: var(--bg-table); color: var(--text); border-color: var(--border); }
+
+    /* ── STOCKS TABLE ── */
+    .table-panel {
+      background: var(--bg-table);
+      border: 1px solid var(--border);
+      border-radius: 0 12px 12px 12px;
+      overflow: hidden;
+    }
+    .table-toolbar {
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toolbar-title { font-size: .8rem; font-weight: 700; color: #c0cee8; }
+    .btn-refresh {
+      background: rgba(116,172,223,.12); border: 1px solid rgba(116,172,223,.25);
+      color: #74acdf; border-radius: 8px; padding: 5px 14px; font-size: .75rem;
+      cursor: pointer; transition: all .15s;
+    }
+    .btn-refresh:hover { background: rgba(116,172,223,.22); }
+
+    .stocks-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    .stocks-table thead th {
+      padding: 9px 12px; font-size: .65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .7px; color: var(--muted); background: rgba(255,255,255,.02);
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+      cursor: pointer; user-select: none;
+    }
+    .stocks-table thead th:hover { color: var(--text); }
+    .stocks-table tbody tr { border-bottom: 1px solid rgba(30,45,74,.5); transition: background .1s; }
+    .stocks-table tbody tr:hover { background: rgba(116,172,223,.05); }
+    .stocks-table tbody tr:last-child { border-bottom: none; }
+    .stocks-table td { padding: 10px 12px; vertical-align: middle; }
+
+    .sym-badge {
+      display: inline-block; padding: 3px 8px;
+      background: rgba(255,255,255,.06); border-radius: 6px;
+      font-weight: 700; font-size: .75rem; letter-spacing: .3px; font-family: monospace;
+    }
+    .company-name { font-size: .75rem; color: var(--muted); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* RSI badge */
+    .rsi-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 20px; font-size: .72rem; font-weight: 700;
+    }
+    .rsi-oversold   { background: rgba(34,197,94,.15);  color: #4ade80; border: 1px solid rgba(34,197,94,.25); }
+    .rsi-neutral    { background: rgba(148,163,184,.1); color: var(--neutral); border: 1px solid rgba(148,163,184,.2); }
+    .rsi-overbought { background: rgba(239,68,68,.15);  color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+    .rsi-mid        { background: rgba(251,191,36,.12); color: #fbbf24; border: 1px solid rgba(251,191,36,.2); }
+
+    /* MACD badge */
+    .macd-bull { background: rgba(34,197,94,.12);  color: #4ade80; border: 1px solid rgba(34,197,94,.2);  padding: 3px 8px; border-radius: 6px; font-size: .7rem; font-weight: 700; }
+    .macd-bear { background: rgba(239,68,68,.12);  color: #f87171; border: 1px solid rgba(239,68,68,.2);  padding: 3px 8px; border-radius: 6px; font-size: .7rem; font-weight: 700; }
+    .macd-val  { font-size: .7rem; color: var(--muted); }
+
+    /* SMA cell */
+    .sma-cell { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+    .sma-val  { font-size: .75rem; color: var(--text); }
+    .sma-up   { font-size: .63rem; color: var(--positive); }
+    .sma-dn   { font-size: .63rem; color: var(--negative); }
+
+    /* Loader / empty */
+    .loader { display: flex; align-items: center; justify-content: center; height: 200px; gap: 12px; color: var(--muted); font-size: .85rem; }
+    .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: #74acdf; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box { margin: 20px 16px; padding: 14px 16px; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); border-radius: 10px; font-size: .82rem; color: #fca5a5; }
+
+    /* Sort arrow */
+    .sort-arrow { display: inline-block; margin-left: 4px; font-size: .6rem; }
+
+    /* Volume */
+    .vol { font-size: .72rem; color: var(--muted); }
+
+    @media (max-width: 900px) { .stocks-table { font-size: .72rem; } }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div>
+    <div class="app-title">
+      <i class="bi bi-bar-chart-line-fill me-2" style="color:#74acdf"></i>
+      Dashboard Bursátil · Índices Globales
+    </div>
+    <div class="app-subtitle">EWZ · S&amp;P 500 · NASDAQ · Dow Jones · MERVAL · BOVESPA — Datos: TradingView</div>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <span id="lastUpdate" style="font-size:.72rem;color:var(--muted)"></span>
+    <button class="btn-refresh" id="btnRefreshAll"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar todo</button>
+  </div>
+</header>
+
+<div class="container-fluid px-3 py-3" style="max-width:1700px">
+
+  <!-- INDEX KPI CARDS -->
+  <div class="row g-2 mb-3" id="indexCards">
+    <div class="col-12"><div class="loader"><div class="spinner"></div>Cargando índices…</div></div>
+  </div>
+
+  <!-- GLOBAL ERROR -->
+  <div id="globalError" class="d-none error-box">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Error al conectar con TradingView.</strong>
+    Asegurate de abrir el archivo desde un servidor local (usá el <code>iniciar-dashboard.bat</code>).
+    <span id="globalErrorDetail"></span>
+  </div>
+
+  <!-- TABS -->
+  <div class="idx-tabs mb-0" id="tabBar"></div>
+
+  <!-- TABLE PANEL -->
+  <div class="table-panel" id="tablePanel">
+    <div class="loader"><div class="spinner"></div>Cargando acciones…</div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+const TV_SCAN = market => `https://scanner.tradingview.com/${market}/scan`;
+
+const COLUMNS = ['name','description','close','change','change_abs','volume','market_cap_basic',
+                 'RSI','MACD.macd','MACD.signal','SMA10','SMA50','SMA100'];
+const COL = Object.fromEntries(COLUMNS.map((c,i) => [c, i]));
+
+const INDICES = [
+  { id:'ewz',    name:'EWZ',        full:'iShares Brazil ETF',           symbol:'AMEX:EWZ',            indexFilter:null,            market:'brazil',    color:'#10b981', flag:'🇧🇷' },
+  { id:'spx',    name:'S&P 500',    full:'Standard & Poor\'s 500',       symbol:'SP:SPX',              indexFilter:'SP:SPX',        market:'america',   color:'#3b82f6', flag:'🇺🇸' },
+  { id:'ndx',    name:'NASDAQ 100', full:'NASDAQ 100',                   symbol:'NASDAQ:NDX',          indexFilter:'NASDAQ:NDX',   market:'america',   color:'#8b5cf6', flag:'🇺🇸' },
+  { id:'dji',    name:'Dow Jones',  full:'Dow Jones Industrial Average', symbol:'TVC:DJI',             indexFilter:'DJ:DJI',        market:'america',   color:'#f59e0b', flag:'🇺🇸' },
+  { id:'merval', name:'MERVAL',     full:'Índice Merval (Argentina)',     symbol:'BCBA:IMV',            indexFilter:null,            market:'argentina', color:'#74acdf', flag:'🇦🇷' },
+  { id:'ibov',   name:'BOVESPA',    full:'Índice Bovespa',               symbol:'BMFBOVESPA:IBOV',     indexFilter:null,            market:'brazil',    color:'#22c55e', flag:'🇧🇷' },
+];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let indexQuotes   = {};   // { id: {close, change, ...} }
+let stocksCache   = {};   // { id: [{symbol, d:[...]}] }
+let activeIdx     = 'spx';
+let sortCol       = 'market_cap_basic';
+let sortAsc       = false;
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+const fmtPrice  = (v, dec=2) => v == null ? '—' : Number(v).toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+const fmtPct    = v => v == null ? '—' : (v > 0 ? '+' : '') + Number(v).toFixed(2) + '%';
+const fmtVol    = v => {
+  if (v == null) return '—';
+  if (v >= 1e9) return (v/1e9).toFixed(1)+'B';
+  if (v >= 1e6) return (v/1e6).toFixed(1)+'M';
+  if (v >= 1e3) return (v/1e3).toFixed(0)+'K';
+  return String(Math.round(v));
+};
+const pctClass  = v => v > 0 ? 'positive' : v < 0 ? 'negative' : 'neutral';
+const arrow     = v => v > 0 ? '▲' : v < 0 ? '▼' : '—';
+
+async function tvPost(market, body) {
+  const r = await fetch(TV_SCAN(market), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status} — ${market}`);
+  return r.json();
+}
+
+// ═══════════════════════════════════════════════════════════
+// FETCH INDEX QUOTES
+// ═══════════════════════════════════════════════════════════
+async function fetchIndexQuotes() {
+  const tickers = INDICES.map(i => i.symbol);
+  const json = await tvPost('global', {
+    symbols: { tickers },
+    columns: ['close','change','change_abs','high','low','volume','open']
+  });
+
+  INDICES.forEach((idx, i) => {
+    const row = json.data?.find(d => d.s === idx.symbol) || json.data?.[i];
+    if (row) {
+      const [close, change, change_abs, high, low, volume, open] = row.d;
+      indexQuotes[idx.id] = { close, change, change_abs, high, low, volume, open };
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// FETCH TOP 10 STOCKS FOR ONE INDEX
+// ═══════════════════════════════════════════════════════════
+async function fetchStocks(idx) {
+  if (stocksCache[idx.id]) return stocksCache[idx.id];
+
+  const body = {
+    columns: COLUMNS,
+    sort: { sortBy: 'market_cap_basic', sortOrder: 'desc' },
+    range: [0, 10],
+    filter: []
+  };
+
+  if (idx.indexFilter) {
+    body.filter = [{ left: 'index', operation: 'equal', right: idx.indexFilter }];
+  } else {
+    // No index filter: get top by mkt cap, exclude very small
+    body.filter = [{ left: 'market_cap_basic', operation: 'greater', right: 100000000 }];
+  }
+
+  const json = await tvPost(idx.market, body);
+  const rows = (json.data || []).map(row => ({
+    symbol:   row.s.split(':')[1] || row.s,
+    exchange: row.s.split(':')[0] || '',
+    d:        row.d,
+  }));
+
+  stocksCache[idx.id] = rows;
+  return rows;
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER INDEX CARDS
+// ═══════════════════════════════════════════════════════════
+function renderIndexCards() {
+  const wrap = document.getElementById('indexCards');
+  wrap.innerHTML = '';
+
+  INDICES.forEach(idx => {
+    const q = indexQuotes[idx.id] || {};
+    const change = q.change ?? null;
+    const cc = pctClass(change);
+
+    const col = document.createElement('div');
+    col.className = 'col-6 col-sm-4 col-md-2';
+    col.innerHTML = `
+      <div class="idx-card${activeIdx === idx.id ? ' active' : ''}" style="--idx-color:${idx.color}" data-idx="${idx.id}">
+        <span class="idx-flag">${idx.flag}</span>
+        <div class="idx-name">${idx.name}</div>
+        <div class="idx-value">${q.close != null ? fmtPrice(q.close) : '—'}</div>
+        <div class="idx-change ${cc}">
+          ${change != null ? arrow(change) + ' ' + fmtPct(change) : '—'}
+        </div>
+      </div>`;
+    col.querySelector('.idx-card').addEventListener('click', () => switchTab(idx.id));
+    wrap.appendChild(col);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER TABS
+// ═══════════════════════════════════════════════════════════
+function renderTabs() {
+  const bar = document.getElementById('tabBar');
+  bar.innerHTML = '';
+  INDICES.forEach(idx => {
+    const t = document.createElement('div');
+    t.className = 'idx-tab' + (activeIdx === idx.id ? ' active' : '');
+    t.dataset.idx = idx.id;
+    t.innerHTML = `<span>${idx.flag}</span> ${idx.name}`;
+    t.addEventListener('click', () => switchTab(idx.id));
+    bar.appendChild(t);
+  });
+}
+
+async function switchTab(id) {
+  activeIdx = id;
+  renderTabs();
+  renderIndexCards();
+  await loadTableForActive();
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER STOCKS TABLE
+// ═══════════════════════════════════════════════════════════
+function renderTable(rows, idx) {
+  // Sort
+  const sortable = [...rows];
+  const colIdx = COLUMNS.indexOf(sortCol);
+  if (colIdx >= 0) {
+    sortable.sort((a, b) => {
+      const va = a.d[colIdx] ?? -Infinity;
+      const vb = b.d[colIdx] ?? -Infinity;
+      return sortAsc ? va - vb : vb - va;
+    });
+  }
+
+  const panel = document.getElementById('tablePanel');
+  const idxCfg = INDICES.find(i => i.id === idx);
+
+  panel.innerHTML = `
+    <div class="table-toolbar">
+      <div class="toolbar-title">
+        <span style="color:${idxCfg.color}">${idxCfg.flag} ${idxCfg.name}</span>
+        <span class="text-muted ms-2" style="font-weight:400;font-size:.72rem">— ${idxCfg.full}</span>
+        <span class="ms-2 badge" style="background:rgba(116,172,223,.12);color:#74acdf;font-size:.65rem">${rows.length} acciones</span>
+      </div>
+      <button class="btn-refresh" id="btnRefreshTab"><i class="bi bi-arrow-clockwise me-1"></i>Actualizar</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="stocks-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th data-sort="name">Símbolo <span class="sort-arrow"></span></th>
+          <th>Empresa</th>
+          <th data-sort="close" class="text-end">Precio <span class="sort-arrow"></span></th>
+          <th data-sort="change" class="text-end">Var. % <span class="sort-arrow"></span></th>
+          <th data-sort="RSI" class="text-center">RSI <span class="sort-arrow"></span></th>
+          <th data-sort="MACD.macd" class="text-center">MACD <span class="sort-arrow"></span></th>
+          <th data-sort="SMA10" class="text-end">SMA 10 <span class="sort-arrow"></span></th>
+          <th data-sort="SMA50" class="text-end">SMA 50 <span class="sort-arrow"></span></th>
+          <th data-sort="SMA100" class="text-end">SMA 100 <span class="sort-arrow"></span></th>
+          <th data-sort="volume" class="text-end">Volumen <span class="sort-arrow"></span></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sortable.map((row, i) => buildRow(row, i)).join('')}
+      </tbody>
+    </table>
+    </div>`;
+
+  // Update sort arrows
+  panel.querySelectorAll('th[data-sort]').forEach(th => {
+    const sc = th.dataset.sort;
+    const arrow = th.querySelector('.sort-arrow');
+    if (sc === sortCol) arrow.textContent = sortAsc ? '↑' : '↓';
+  });
+
+  // Sort click handlers
+  panel.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const sc = th.dataset.sort;
+      if (sortCol === sc) sortAsc = !sortAsc;
+      else { sortCol = sc; sortAsc = false; }
+      renderTable(rows, idx);
+    });
+  });
+
+  // Refresh button
+  panel.querySelector('#btnRefreshTab').addEventListener('click', async () => {
+    delete stocksCache[activeIdx];
+    await loadTableForActive();
+  });
+}
+
+function buildRow(row, rank) {
+  const d       = row.d;
+  const close   = d[COL['close']];
+  const change  = d[COL['change']];
+  const vol     = d[COL['volume']];
+  const rsi     = d[COL['RSI']];
+  const macdL   = d[COL['MACD.macd']];
+  const macdS   = d[COL['MACD.signal']];
+  const sma10   = d[COL['SMA10']];
+  const sma50   = d[COL['SMA50']];
+  const sma100  = d[COL['SMA100']];
+  const desc    = d[COL['description']] || '';
+
+  // RSI badge
+  let rsiBadge;
+  if (rsi == null) {
+    rsiBadge = `<span class="rsi-badge rsi-neutral">—</span>`;
+  } else if (rsi < 30) {
+    rsiBadge = `<span class="rsi-badge rsi-oversold" title="Sobrevendido"><i class="bi bi-arrow-down-circle me-1"></i>${rsi.toFixed(1)}</span>`;
+  } else if (rsi < 45) {
+    rsiBadge = `<span class="rsi-badge rsi-oversold" title="Zona baja">${rsi.toFixed(1)}</span>`;
+  } else if (rsi < 55) {
+    rsiBadge = `<span class="rsi-badge rsi-neutral" title="Neutral">${rsi.toFixed(1)}</span>`;
+  } else if (rsi < 70) {
+    rsiBadge = `<span class="rsi-badge rsi-mid" title="Zona alta">${rsi.toFixed(1)}</span>`;
+  } else {
+    rsiBadge = `<span class="rsi-badge rsi-overbought" title="Sobrecomprado"><i class="bi bi-arrow-up-circle me-1"></i>${rsi.toFixed(1)}</span>`;
+  }
+
+  // MACD badge
+  let macdHtml = '—';
+  if (macdL != null && macdS != null) {
+    const bull = macdL > macdS;
+    macdHtml = `
+      <div>
+        <span class="${bull ? 'macd-bull' : 'macd-bear'}">${bull ? '▲ ALCISTA' : '▼ BAJISTA'}</span>
+      </div>
+      <div class="macd-val mt-1">${macdL.toFixed(2)} / ${macdS.toFixed(2)}</div>`;
+  }
+
+  // SMA cell builder
+  const smaCell = (smaVal) => {
+    if (smaVal == null || close == null) return '<span class="text-muted">—</span>';
+    const above = close > smaVal;
+    return `<div class="sma-cell">
+      <span class="sma-val">${fmtPrice(smaVal)}</span>
+      <span class="${above ? 'sma-up' : 'sma-dn'}">${above ? '▲ Precio arriba' : '▼ Precio abajo'}</span>
+    </div>`;
+  };
+
+  const cc = pctClass(change);
+
+  return `
+    <tr>
+      <td style="color:var(--muted);font-size:.72rem">${rank+1}</td>
+      <td>
+        <div><span class="sym-badge">${row.symbol}</span></div>
+        <div style="font-size:.62rem;color:var(--muted);margin-top:2px">${row.exchange}</div>
+      </td>
+      <td><div class="company-name" title="${desc}">${desc || '—'}</div></td>
+      <td class="text-end" style="font-weight:700">${close != null ? fmtPrice(close) : '—'}</td>
+      <td class="text-end"><span class="${cc}" style="font-weight:600">${change != null ? arrow(change)+' '+fmtPct(change) : '—'}</span></td>
+      <td class="text-center">${rsiBadge}</td>
+      <td class="text-center">${macdHtml}</td>
+      <td class="text-end">${smaCell(sma10)}</td>
+      <td class="text-end">${smaCell(sma50)}</td>
+      <td class="text-end">${smaCell(sma100)}</td>
+      <td class="text-end vol">${fmtVol(vol)}</td>
+    </tr>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOAD TABLE FOR ACTIVE TAB
+// ═══════════════════════════════════════════════════════════
+async function loadTableForActive() {
+  const panel = document.getElementById('tablePanel');
+  panel.innerHTML = '<div class="loader"><div class="spinner"></div>Cargando acciones…</div>';
+
+  const idx = INDICES.find(i => i.id === activeIdx);
+  try {
+    const rows = await fetchStocks(idx);
+    if (!rows.length) {
+      panel.innerHTML = '<div class="error-box">No se encontraron datos para este índice.</div>';
+      return;
+    }
+    renderTable(rows, activeIdx);
+  } catch(e) {
+    panel.innerHTML = `<div class="error-box">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      Error al cargar ${idx.name}: ${e.message}
+    </div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// REFRESH ALL
+// ═══════════════════════════════════════════════════════════
+async function refreshAll() {
+  stocksCache = {};
+  indexQuotes = {};
+  await init();
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTO-REFRESH every 60s
+// ═══════════════════════════════════════════════════════════
+setInterval(refreshAll, 60000);
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+async function init() {
+  document.getElementById('globalError').classList.add('d-none');
+
+  // Render skeleton tabs immediately
+  renderTabs();
+
+  try {
+    await fetchIndexQuotes();
+  } catch(e) {
+    console.error('Index quotes failed:', e);
+    document.getElementById('globalError').classList.remove('d-none');
+    document.getElementById('globalErrorDetail').textContent = ` (${e.message})`;
+  }
+
+  renderIndexCards();
+  renderTabs();
+
+  await loadTableForActive();
+
+  document.getElementById('lastUpdate').textContent =
+    'Actualizado: ' + new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+document.getElementById('btnRefreshAll').addEventListener('click', refreshAll);
+
+init();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,10 +1,10 @@
 @echo off
-title Dashboard Financiero Argentina - BCRA
+title Dashboards Financieros
 cd /d "%~dp0"
 
 echo.
 echo  ==========================================
-echo   Dashboard Financiero Argentina - BCRA
+echo   Dashboards Financieros
 echo  ==========================================
 echo.
 
@@ -16,7 +16,7 @@ if %errorlevel% == 0 (
     echo  Iniciando servidor en http://localhost:%PORT% ...
     echo  Cerra esta ventana para detener el servidor.
     echo.
-    start "" "http://localhost:%PORT%"
+    start "" "http://localhost:%PORT%/menu.html"
     python -m http.server %PORT%
     goto :end
 )
@@ -26,7 +26,7 @@ if %errorlevel% == 0 (
     echo  Iniciando servidor en http://localhost:%PORT% ...
     echo  Cerra esta ventana para detener el servidor.
     echo.
-    start "" "http://localhost:%PORT%"
+    start "" "http://localhost:%PORT%/menu.html"
     python3 -m http.server %PORT%
     goto :end
 )
@@ -37,7 +37,7 @@ if %errorlevel% == 0 (
     echo  Iniciando servidor con Node.js...
     echo  Cerra esta ventana para detener el servidor.
     echo.
-    start "" "http://localhost:3000"
+    start "" "http://localhost:3000/menu.html"
     npx --yes serve .
     goto :end
 )
